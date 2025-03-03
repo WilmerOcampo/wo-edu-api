@@ -5,12 +5,9 @@ import com.wo.edu.domain.dto.SaveUser;
 import com.wo.edu.domain.dto.UserDto;
 import com.wo.edu.domain.repository.IUserDtoRepository;
 import com.wo.edu.persistence.entity.UserMaster;
-import com.wo.edu.persistence.entity.course.Profession;
 import com.wo.edu.persistence.entity.course.Teacher;
-import com.wo.edu.persistence.entity.role.Role;
 import com.wo.edu.persistence.entity.role.enums.ERole;
 import com.wo.edu.persistence.mapper.IUserMapper;
-import com.wo.edu.persistence.util.EntityConverter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Repository;
@@ -25,6 +22,8 @@ public class UserRepositoryImpl implements IUserDtoRepository {
     private final IUserMasterRepository userMasterRepository;
     private final IUserRepository userRepository;
     private final ITeacherRepository teacherRepository;
+    private final IRoleRepository roleRepository;
+    private final IProfessionRepository professionRepository;
     private final IUserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
 
@@ -51,7 +50,7 @@ public class UserRepositoryImpl implements IUserDtoRepository {
         UserMaster user = userMapper.toUser(userDto);
         encodeAndSetPassword(user, userDto.getPassword());
 
-        EntityConverter.setEntitiesFromIds(user::setRoles, userDto.getRoleIds(), Role::new);
+        user.setRoles(roleRepository.findByIdIn(userDto.getRoleIds()));
         return userMapper.toUserDto(userMasterRepository.save(user));
     }
 
@@ -69,9 +68,8 @@ public class UserRepositoryImpl implements IUserDtoRepository {
 
         Teacher teacher = new Teacher();
 
-        EntityConverter.setEntitiesFromIds(teacher::setProfessions, userDto.getProfessionIds(), Profession::new);
-        EntityConverter.setEntitiesFromIds(userMaster::setRoles, userDto.getRoleIds(), Role::new);
-
+        teacher.setProfessions(professionRepository.findByIdIn(userDto.getProfessionIds()));
+        userMaster.setRoles(roleRepository.findByIdIn(userDto.getRoleIds()));
         teacherRepository.save(teacher);
         return userMapper.toUserDto(userMasterRepository.save(userMaster));
     }
